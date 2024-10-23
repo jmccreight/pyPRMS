@@ -17,7 +17,7 @@ from .parameters.ParamDb import ParamDb
 from .parameters.ParameterNetCDF import ParameterNetCDF
 from .cbh.CbhAscii import CbhAscii
 from .cbh.CbhNetcdf import CbhNetcdf
-from .DataFile import DataFile
+from pyPRMS.input.DataFile import DataFile
 
 
 from .version import __author__, __author_email__, __version__
