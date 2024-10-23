@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 pretty.install()
 con = Console()
 
+from .InputVariable import InputVariable
+
 # TS_FORMAT = '%Y %m %d %H %M %S'   # 1915 1 13 0 0 0
 
 HEADER_SEP = '//////////'
@@ -33,8 +35,12 @@ class DataFile(object):
         self.__timecols = 6  # number columns for time in the file
         self.__header = ''   # data file header from first line of the file
 
-        # Dictionary of input variables and associated metadata
-        self.__input_vars: Dict[str, Dict[str, Union[int, str, List[str], pd.DataFrame]]] = {}
+        # Dictionary of input variables and InputVariable objects
+        self.__input_vars: Dict[str, InputVariable] = {}
+
+        # Internal dictionary of input variables and associated metadata
+        self.__input_vars_intern: Dict[str, Dict[str, Union[int, str, List[str], pd.DataFrame]]] = {}
+
         self.__data_raw: Optional[pd.DataFrame] = None
 
         self.load_file(self.filename)
@@ -49,15 +55,9 @@ class DataFile(object):
     def input_variables(self):
         """Get the input variables in the data file"""
 
-        return self.__input_vars
+        return self.__input_vars_intern
 
-    def data_by_variable(self, variable: str) -> pd.DataFrame:
-        """Get the data for a specific input variable"""
-
-        assert type(self.__input_vars[variable]['data']) is pd.DataFrame
-        return self.__input_vars[variable]['data']
-
-    def get(self, name: str) -> Dict:
+    def get(self, name: str) -> InputVariable:
         """Get the metadata for a specific input variable"""
 
         return self.__input_vars[name]
@@ -91,9 +91,9 @@ class DataFile(object):
                 sz = int(sz)
 
                 if sz > 0:
-                    if nm in self.__input_vars:
+                    if nm in self.__input_vars_intern:
                         raise KeyError(f'{nm} declared multiple times in the data file')
-                    self.__input_vars[nm] = dict(size=sz)
+                    self.__input_vars_intern[nm] = dict(size=sz)
 
             # =============================
             # Process metadata
@@ -135,10 +135,10 @@ class DataFile(object):
 
                     while line[0:len(HEADER_SEP)] != HEADER_SEP and len(line) > 2:
                         for cvar in station_vars:
-                            if cvar not in self.__input_vars:
+                            if cvar not in self.__input_vars_intern:
                                 raise KeyError(f'{cvar} is not one of the input variables declared in the data file')
-                            self.__input_vars[cvar].setdefault('stations', []).extend(line.replace(COMMENT, '').
-                                                                                      replace(' ', '').split(','))
+                            self.__input_vars_intern[cvar].setdefault('stations', []).extend(line.replace(COMMENT, '').
+                                                                                             replace(' ', '').split(','))
                         line = next(it)
                 elif line[0:len(UNITS_START)] == UNITS_START:
                     # Process the units
@@ -146,7 +146,7 @@ class DataFile(object):
                         for elem in line.replace(UNITS_START, '').replace(COMMENT, '').replace(' ', '').split(','):
                             cvar, cunits = elem.split('=')
                             try:
-                                self.__input_vars[cvar]['units'] = cunits
+                                self.__input_vars_intern[cvar]['units'] = cunits
                             except KeyError:
                                 con.print(f'[red]{cvar}[/] is not a valid input variable name in this data file')
                                 pass
@@ -158,8 +158,11 @@ class DataFile(object):
 
         # Create a data key for each input variable that maps to their respective parts of the dataframe
         st_idx = 0
-        for cvar, cmeta in self.__input_vars.items():
-            self.__input_vars[cvar]['data'] = self.__data_raw.iloc[:, st_idx:(st_idx+cmeta['size'])]
+        for cvar, cmeta in self.__input_vars_intern.items():
+            self.__input_vars[cvar] = InputVariable(name=cvar,
+                                                    data=self.__data_raw.iloc[:, st_idx:(st_idx + cmeta['size'])],
+                                                    units=cmeta.get('units', None))
+            # self.__input_vars_intern[cvar]['data'] = self.__data_raw.iloc[:, st_idx:(st_idx + cmeta['size'])]
             st_idx += cmeta['size']
 
     def _data_column_names(self):
@@ -167,7 +170,7 @@ class DataFile(object):
         """
         var_col_names = []
 
-        for cvar, meta in self.__input_vars.items():
+        for cvar, meta in self.__input_vars_intern.items():
             if 'stations' in meta:
                 for cstn in meta['stations']:
                     var_col_names.append(f'{cvar}_{cstn}')
