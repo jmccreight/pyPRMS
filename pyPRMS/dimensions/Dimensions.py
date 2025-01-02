@@ -50,6 +50,9 @@ class Dimensions(object):
         """
 
         # print('ATTR: {}'.format(name))
+        # https://nedbatchelder.com/blog/201010/surprising_getattr_recursion.html
+        if name == "__setstate__":
+            raise AttributeError(name)
         return getattr(self.__dimensions, name)
 
     def __getitem__(self, item: str) -> Dimension:

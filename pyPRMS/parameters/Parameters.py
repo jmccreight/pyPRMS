@@ -73,6 +73,9 @@ class Parameters(object):
 
         # Undefined attributes will look up the given parameter
         # return self.get(item)
+        # https://nedbatchelder.com/blog/201010/surprising_getattr_recursion.html
+        if name == "__setstate__":
+            raise AttributeError(name)
         return getattr(self.__parameters, name)
 
     def __getitem__(self, item):

@@ -100,3 +100,15 @@ class TestEmptyDimensions:
 
         with pytest.raises(ValueError):
             dims_obj.get('somedim')
+
+    def test_dunder_getitem(self, dims_obj):
+        """Test the __getitem__ method"""
+
+        with pytest.raises(KeyError):
+            dims_obj['somedim']
+
+    def test_dunder_getattr(self, dims_obj):
+        """Test the __getattr__ method"""
+
+        with pytest.raises(AttributeError):
+            dims_obj.somedim
