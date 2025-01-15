@@ -57,6 +57,19 @@ class DataFile(object):
 
         return self.__input_vars_intern
 
+    def data_by_variable(self, variable: str) -> pd.DataFrame:
+        """Get the data for a specific input variable"""
+        import warnings
+
+        msg = "DataFile.data_by_variable() method to be deprecated"
+        warnings.warn(msg, DeprecationWarning)
+        data = self.__input_vars[variable].data.copy()
+        # The names are a headache anyother way, hard to make them truly
+        # backwards compatible using the old code.
+        data.columns = variable + "_" + data.columns
+        assert type(data) is pd.DataFrame
+        return data
+
     def get(self, name: str) -> InputVariable:
         """Get the metadata for a specific input variable"""
 

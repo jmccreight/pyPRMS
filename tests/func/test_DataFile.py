@@ -1,4 +1,6 @@
-# import pytest
+import pytest
+import pandas as pd
+
 # import numpy as np
 
 from pyPRMS import DataFile
@@ -25,6 +27,14 @@ class TestStreamflow:
 
         datafile = DataFile(sf_filename, verbose=False)
         obs_sf = datafile.get('runoff')
+
+        # A deprecation warning/reminder that checks backwards compatibility
+        # until data_by_variable() is completely removed
+        with pytest.warns(DeprecationWarning):
+            obs_sf_dbv = datafile.data_by_variable("runoff")
+        obs_sf_dbv.columns = obs_sf_dbv.columns.str.split("_").str[1]
+        pd.testing.assert_frame_equal(obs_sf.data, obs_sf_dbv)
+        del obs_sf_dbv
 
         expected_mean = {'14142500': 0.0,
                          '14137002': 0.0,
