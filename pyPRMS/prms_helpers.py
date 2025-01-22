@@ -1,5 +1,5 @@
 
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Set, Tuple, Union
 
 import datetime
 import decimal
@@ -15,6 +15,38 @@ from .constants import Version   # type: ignore
 cond_check = {'=': operator.eq,
               '>': operator.gt,
               '<': operator.lt}
+
+
+def chunk_shape_2d(var_shape: Tuple[int, int],
+                   val_size: int = 4,
+                   chunk_size: int = 4096) -> List[int]:
+    """Get chunk sizes for 2D variable for balanced access
+
+    :param var_shape: Shape of variable
+    :param val_size: Size in bytes for variable values (4=float, 8=double)
+    :param chunk_size: Size in bytes for each chunks
+    :return: List of chunk sizes for 2D variable
+    """
+
+    num_vals_in_chunk = float(chunk_size / val_size)
+    num_vals_total = var_shape[0] * var_shape[1]
+    chunk_percent = (num_vals_in_chunk / num_vals_total)**.5
+
+    if chunk_percent > 1.0:
+        print('ERROR: Total size of array is too small for reliable chunks at this chunk_size')
+
+    starting_chunk = [int(var_shape[0] * chunk_percent), int(var_shape[1] * chunk_percent)]
+    starting_size = starting_chunk[0] * starting_chunk[1]
+
+    curr_best = starting_chunk
+    for x1 in range(0, 2):
+        for x2 in range(0, 2):
+            cnk_size = (starting_chunk[0] + x1) * (starting_chunk[1] + x2)
+
+            if starting_size < cnk_size <= num_vals_in_chunk:
+                curr_best = [starting_chunk[0] + x1, starting_chunk[1] + x2]
+
+    return curr_best
 
 
 def flex_type(val):
@@ -39,7 +71,8 @@ def float_to_str(f: float) -> str:
     :returns: String representation of the float
     """
 
-    # From: https://stackoverflow.com/questions/38847690/convert-float-to-string-without-scientific-notation-and-false-precision
+    # From:
+    # https://stackoverflow.com/questions/38847690/convert-float-to-string-without-scientific-notation-and-false-precision
 
     # create a new context for this task
     ctx = decimal.Context()
