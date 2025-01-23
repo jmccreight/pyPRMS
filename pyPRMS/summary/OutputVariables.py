@@ -6,6 +6,7 @@ import geopandas   # type: ignore
 import cartopy.crs as ccrs  # type: ignore
 import netCDF4
 import pandas as pd   # type: ignore
+import xarray as xr
 
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER  # type: ignore
 from functools import cached_property
@@ -57,7 +58,7 @@ class OutputVariables(object):
         for cvar, cfile in self.available_vars.items():
             self.__out_vars[cvar] = OutputVariable(cvar, cfile, self.metadata)
 
-        print(f'global IDS: {self.__use_global}')
+        # print(f'global IDS: {self.__use_global}')
 
     @cached_property
     def available_vars(self):
@@ -70,7 +71,8 @@ class OutputVariables(object):
 
         for ckind, cvals in var_kind.items():
             if self.__control.get(f'{ckind}OutON_OFF').values in cvals:
-                self.__use_global[ckind] = self.__control.get(f'{ckind}OutON_OFF').values == 2
+                if ckind in ['nhru', 'nsegment']:
+                    self.__use_global[ckind] = self.__control.get(f'{ckind}OutON_OFF').values == 2
 
                 prefix = self.__control.get(f'{ckind}OutBaseFileName').values
                 varlist = self.__control.get(f'{ckind}OutVar_names').values.tolist()
@@ -80,6 +82,9 @@ class OutputVariables(object):
 
                 for vv in varlist:
                     var_dict[vv] = f'{prefix}{vv}.csv'
+
+                    if ckind in ['nhru', 'nsegment']:
+                        self.metadata[vv]['is_global'] = self.__control.get(f'{ckind}OutON_OFF').values == 2
 
         if self.__control.get('basinOutON_OFF').values == 1:
             filename = self.__control.get('basinOutBaseFileName').values
@@ -104,83 +109,95 @@ class OutputVariables(object):
     def get(self, varname):
         return self.__out_vars[varname]
 
-    def write_netcdf(self,
-                     filename: Union[str, os.PathLike],
-                     var_name: str,
-                     chunks: Optional[Dict[str, int]] = None) -> None:
-        """Write model output to netCDF file
-        """
+    def write_netcdf(self, filename, varnames):
+        if isinstance(varnames, str):
+            varnames = [varnames]
 
-        # TODO: 2025-01-22 PAN - this does not work for basin variables
+        arr_list = []
 
-        # Map dimension name to name used in netcdf file
-        dim_name_nc = dict(ngw='nhru', nssr='nhru', nhru='nhru', nsegment='nsegment')
+        for cvar in varnames:
+            arr_list.append(self.__out_vars[cvar].to_xarray())
 
-        global_dim_var = {'nhru': 'nhm_id',
-                          'nsegment': 'nhm_seg'}
+        ds = xr.merge(arr_list)
+        ds.to_netcdf(filename)
 
-        global_dim_desc = {'nhru': 'NHM Hydrologic Response Unit ID (HRU)',
-                           'nsegment': 'NHM segment ID'}
-
-        dim_desc = {'nhru': 'Local model Hydrologic Response Unit ID (HRU)',
-                    'nsegment': 'Local model segment ID'}
-
-        var_obj = self.get(var_name)
-        var_data = var_obj.data
-
-        # Get the mapped dimension name (e.g. ngw, nssr, nhru => nhru)
-        curr_dim = dim_name_nc[var_obj.metadata['dimensions'][0]]
-
-        # Get starting date
-        st_date = var_data.index[0]   # src_df.index[0]   # var_dates[0]
-        # en_date = var_data.index[-1]   # src_df.index[-1]   # var_dates[-1]
-
-        # ntime = (en_date - st_date).days + 1
-        ntime = var_data.shape[0]
-        ncol = var_data.shape[1]
-
-        if chunks is None:
-            cnk_sizes = chunk_shape_2d((ntime, ncol), val_size=4, chunk_size=1048576)  # 32768)
-        else:
-            cnk_sizes = [chunks[vv] for vv in ['time', curr_dim]]
-
-        nco = netCDF4.Dataset(filename, 'w', clobber=True)
-
-        nco.createDimension(curr_dim, ncol)
-        nco.createDimension('time', None)
-
-        timeo = nco.createVariable('time', 'f4', 'time')
-        timeo.calendar = 'standard'
-        timeo.units = f'days since {st_date.year}-{st_date.month:02d}-{st_date.day:02d} 00:00:00'
-
-        dimo = nco.createVariable(curr_dim, 'i4', curr_dim)
-        dimo.long_name = dim_desc[curr_dim]
-
-        var_type = NETCDF_DATATYPES[PTYPE_TO_PRMS_TYPE[var_obj.metadata['datatype']]]
-        varo = nco.createVariable(var_name, var_type, ('time', curr_dim),
-                                  fill_value=netCDF4.default_fillvals[var_type],
-                                  zlib=True, complevel=1,
-                                  chunksizes=cnk_sizes)
-
-        varo.long_name = var_obj.metadata['description']
-        varo.units = var_obj.metadata['units']
-
-        # Add the global/NHM IDs
-        if self.__use_global[curr_dim] and curr_dim in global_dim_var:
-            globalido = nco.createVariable(global_dim_var[curr_dim], 'i4', curr_dim)
-            globalido.long_name = global_dim_desc[curr_dim]
-
-            globalido[:] = var_data.columns
-
-        # Write the local model HRU or segment IDs
-        dimo[:] = list(range(1, ncol+1))
-
-        timeo[:] = netCDF4.date2num(var_data.index.to_pydatetime(), units=timeo.units, calendar=timeo.calendar)
-
-        nco.variables[var_name][:, :] = var_data.values
-        # nco.variables[var_name][:, :] = var_data.transpose()
-
-        nco.close()
+    # def write_netcdf(self,
+    #                  filename: Union[str, os.PathLike],
+    #                  var_name: str,
+    #                  chunks: Optional[Dict[str, int]] = None) -> None:
+    #     """Write model output to netCDF file
+    #     """
+    #
+    #     # TODO: 2025-01-22 PAN - this does not work for basin variables
+    #
+    #     # Map dimension name to name used in netcdf file
+    #     dim_name_nc = dict(ngw='nhru', nssr='nhru', nhru='nhru', nsegment='nsegment')
+    #
+    #     global_dim_var = {'nhru': 'nhm_id',
+    #                       'nsegment': 'nhm_seg'}
+    #
+    #     global_dim_desc = {'nhru': 'NHM Hydrologic Response Unit ID (HRU)',
+    #                        'nsegment': 'NHM segment ID'}
+    #
+    #     dim_desc = {'nhru': 'Local model Hydrologic Response Unit ID (HRU)',
+    #                 'nsegment': 'Local model segment ID'}
+    #
+    #     var_obj = self.get(var_name)
+    #     var_data = var_obj.data
+    #
+    #     # Get the mapped dimension name (e.g. ngw, nssr, nhru => nhru)
+    #     curr_dim = dim_name_nc[var_obj.metadata['dimensions'][0]]
+    #
+    #     # Get starting date
+    #     st_date = var_data.index[0]   # src_df.index[0]   # var_dates[0]
+    #     # en_date = var_data.index[-1]   # src_df.index[-1]   # var_dates[-1]
+    #
+    #     # ntime = (en_date - st_date).days + 1
+    #     ntime = var_data.shape[0]
+    #     ncol = var_data.shape[1]
+    #
+    #     if chunks is None:
+    #         cnk_sizes = chunk_shape_2d((ntime, ncol), val_size=4, chunk_size=1048576)  # 32768)
+    #     else:
+    #         cnk_sizes = [chunks[vv] for vv in ['time', curr_dim]]
+    #
+    #     nco = netCDF4.Dataset(filename, 'w', clobber=True)
+    #
+    #     nco.createDimension(curr_dim, ncol)
+    #     nco.createDimension('time', None)
+    #
+    #     timeo = nco.createVariable('time', 'f4', 'time')
+    #     timeo.calendar = 'standard'
+    #     timeo.units = f'days since {st_date.year}-{st_date.month:02d}-{st_date.day:02d} 00:00:00'
+    #
+    #     dimo = nco.createVariable(curr_dim, 'i4', curr_dim)
+    #     dimo.long_name = dim_desc[curr_dim]
+    #
+    #     var_type = NETCDF_DATATYPES[PTYPE_TO_PRMS_TYPE[var_obj.metadata['datatype']]]
+    #     varo = nco.createVariable(var_name, var_type, ('time', curr_dim),
+    #                               fill_value=netCDF4.default_fillvals[var_type],
+    #                               zlib=True, complevel=1,
+    #                               chunksizes=cnk_sizes)
+    #
+    #     varo.long_name = var_obj.metadata['description']
+    #     varo.units = var_obj.metadata['units']
+    #
+    #     # Add the global/NHM IDs
+    #     if self.__use_global[curr_dim] and curr_dim in global_dim_var:
+    #         globalido = nco.createVariable(global_dim_var[curr_dim], 'i4', curr_dim)
+    #         globalido.long_name = global_dim_desc[curr_dim]
+    #
+    #         globalido[:] = var_data.columns
+    #
+    #     # Write the local model HRU or segment IDs
+    #     dimo[:] = list(range(1, ncol+1))
+    #
+    #     timeo[:] = netCDF4.date2num(var_data.index.to_pydatetime(), units=timeo.units, calendar=timeo.calendar)
+    #
+    #     nco.variables[var_name][:, :] = var_data.values
+    #     # nco.variables[var_name][:, :] = var_data.transpose()
+    #
+    #     nco.close()
 
     # @staticmethod
     # def _read_streamflow_header(filename):
