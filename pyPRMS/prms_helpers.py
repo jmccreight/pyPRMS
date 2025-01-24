@@ -1,9 +1,8 @@
-
-from typing import List, Optional, Set, Tuple, Union
+from typing import Iterator, List, Optional, Set, Union
 
 import datetime
-import decimal
 import operator
+import os
 import pandas as pd   # type: ignore
 import networkx as nx   # type: ignore
 import numpy as np
@@ -17,75 +16,35 @@ cond_check = {'=': operator.eq,
               '<': operator.lt}
 
 
-def chunk_shape_2d(var_shape: Tuple[int, int],
-                   val_size: int = 4,
-                   chunk_size: int = 4096) -> List[int]:
-    """Get chunk sizes for 2D variable for balanced access
+def flex_type(val: Union[str, int, float, np.float32, np.float64, np.int32, np.int64]) -> str:
+    """Convert the given value to a string.
 
-    :param var_shape: Shape of variable
-    :param val_size: Size in bytes for variable values (4=float, 8=double)
-    :param chunk_size: Size in bytes for each chunks
-    :return: List of chunk sizes for 2D variable
+    :param val: Value to convert to a string
+
+    :returns: String representation of the value
     """
 
-    num_vals_in_chunk = float(chunk_size / val_size)
-    num_vals_total = var_shape[0] * var_shape[1]
-    chunk_percent = (num_vals_in_chunk / num_vals_total)**.5
-
-    if chunk_percent > 1.0:
-        print('ERROR: Total size of array is too small for reliable chunks at this chunk_size')
-
-    starting_chunk = [int(var_shape[0] * chunk_percent), int(var_shape[1] * chunk_percent)]
-    starting_size = starting_chunk[0] * starting_chunk[1]
-
-    curr_best = starting_chunk
-    for x1 in range(0, 2):
-        for x2 in range(0, 2):
-            cnk_size = (starting_chunk[0] + x1) * (starting_chunk[1] + x2)
-
-            if starting_size < cnk_size <= num_vals_in_chunk:
-                curr_best = [starting_chunk[0] + x1, starting_chunk[1] + x2]
-
-    return curr_best
-
-
-def flex_type(val):
-    if isinstance(val, (np.float32, np.float64, np.int32, np.str_)):
+    if isinstance(val, (np.float32, np.float64, np.int32, np.int64, np.str_)):
         val = val.item()
 
     if isinstance(val, str):
         return val
 
-    try:
-        return float_to_str(val)
-    except decimal.InvalidOperation:
-        print(f'Caused by: {val}')
-        raise
+    if isinstance(val, int):
+        return repr(val)
+
+    if isinstance(val, float):
+        if np.isinf(val):
+            raise ValueError('Infinite floating point value')
+
+        return np.format_float_positional(val, precision=20, trim='0')
 
 
-def float_to_str(f: float) -> str:
-    """Convert the given float to a string, without resorting to scientific notation.
-
-    :param f: Number
-
-    :returns: String representation of the float
-    """
-
-    # From:
-    # https://stackoverflow.com/questions/38847690/convert-float-to-string-without-scientific-notation-and-false-precision
-
-    # create a new context for this task
-    ctx = decimal.Context()
-
-    # 20 digits should be enough for everyone :D
-    ctx.prec = 20
-
-    d1 = ctx.create_decimal(repr(f))
-    return format(d1, 'f')
-
-
-def get_file_iter(filename):
+def get_file_iter(filename: Union[str, os.PathLike]) -> Iterator[str]:
     """Reads a file and returns an iterator to the data
+
+    :param filename: Name of the file to read
+    :returns: Iterator to the file data
     """
 
     infile = open(filename, 'r')
@@ -190,25 +149,31 @@ def read_xml(filename: str) -> xmlET.Element:
     return xml_tree.getroot()
 
 
-def set_date(adate: Union[datetime.datetime, datetime.date, str]) -> datetime.datetime:
+def set_date(adate: Union[datetime.datetime, datetime.date, str, np.ndarray]) -> datetime.datetime:
     """Return datetime object given a datetime or string of format YYYY-MM-DD
 
     :param adate: Datetime object or string (YYYY-MM-DD)
     :returns: Datetime object
     """
-    if isinstance(adate, datetime.date):
-        return datetime.datetime.combine(adate, datetime.time.min)
-        # return adate
-    elif isinstance(adate, datetime.datetime):
+
+    if isinstance(adate, datetime.datetime):
         return adate
+    elif isinstance(adate, datetime.date):
+        return datetime.datetime.combine(adate, datetime.time.min)
     elif isinstance(adate, np.ndarray):
         return datetime.datetime(*adate)
     else:
         return datetime.datetime(*[int(x) for x in re.split('[- :]', adate)])  # type: ignore
 
 
-def version_info(version_str: Optional[str] = None, delim: Optional[str] = '.') -> Version:
+def version_info(version_str: Optional[str] = None,
+                 delim: Optional[str] = '.') -> Version:
     """Given a version string (MM.mm.rr) returns a named tuple of version values
+
+    :param version_str: Version string
+    :param delim: Delimiter for version string
+
+    :returns: Named tuple of version values
     """
 
     # Version = NamedTuple('Version', [('major', Union[int, None]),
