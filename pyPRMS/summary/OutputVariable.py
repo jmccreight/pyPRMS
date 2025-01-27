@@ -1,8 +1,9 @@
 import numpy as np
 import os
-import pandas as pd
+import pandas as pd   # type: ignore
 import xarray as xr
 
+from pathlib import Path
 from typing import Union
 
 from ..constants import NEW_PTYPE_TO_DTYPE
@@ -12,7 +13,7 @@ class OutputVariable(object):
     """Container for a single output variable
     """
 
-    def __init__(self, name: str, filename: Union[str, os.PathLike], metadata: dict):
+    def __init__(self, name: str, filename: Union[str, Path], metadata: dict):
         """Initialize the OutputVariable object.
 
         :param name: Name of the output variable
@@ -20,8 +21,11 @@ class OutputVariable(object):
         :param metadata: Metadata for the output variable
         """
 
-        self.__name = name
+        if isinstance(filename, str):
+            filename = Path(filename)
         self.__filename = filename
+
+        self.__name = name
         self.__data = None
 
         if 'variables' in metadata:
@@ -41,7 +45,7 @@ class OutputVariable(object):
         return self.__data
 
     @property
-    def filename(self) -> Union[str, os.PathLike]:
+    def filename(self) -> Path:
         """Return the path to the model output variable
 
         :returns: Path to the model output variable file
@@ -93,7 +97,7 @@ class OutputVariable(object):
             da[dim_name].attrs['long_name'] = local_dim_desc[dim_name]
 
         # Set the time coordinate variable attributes
-        first_time = self.__data.index[0]
+        first_time = self.data.index[0]
         da.time.attrs['standard_name'] = 'time'
         da.time.attrs['long_name'] = 'time'
         da.time.encoding['units'] = f'days since {first_time.year}-{first_time.month:02d}-{first_time.day:02d} 00:00:00'

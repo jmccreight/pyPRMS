@@ -3,6 +3,7 @@ import pandas as pd   # type: ignore
 import xarray as xr
 
 from functools import cached_property
+from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 # os.environ['USE_PYGEOS'] = '0'
@@ -23,7 +24,7 @@ class OutputVariables(object):
     def __init__(self,
                  control: Control,
                  metadata: MetaDataType,
-                 model_dir: Optional[Union[str, os.PathLike]] = None,
+                 model_dir: Optional[Union[str, os.PathLike, Path]] = None,
                  verbose: Optional[bool] = False):
         """Initialize the model output object.
 
@@ -33,10 +34,13 @@ class OutputVariables(object):
         :param verbose: Output debugging information
         """
 
+        if isinstance(model_dir, str):
+            model_dir = Path(model_dir)
+        self.__model_dir = model_dir
+
         self.__control = control
         self.metadata = metadata['variables']
         self.__dimension_metadata = metadata['dimensions']
-        self.__model_dir = model_dir
         self.__verbose = verbose
 
         self.__out_vars = dict()
@@ -98,7 +102,8 @@ class OutputVariables(object):
         """
         return self.__out_vars[varname]
 
-    def write_netcdf(self, filename: Union[str, os.PathLike], varnames: Union[str, List[str]]):
+    def write_netcdf(self, filename: Union[str, os.PathLike],
+                     varnames: Union[str, List[str]]):
         """Write selected output variables to netCDF file.
 
         :param filename: Name of the netCDF file
