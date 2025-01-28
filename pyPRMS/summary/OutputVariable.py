@@ -69,6 +69,9 @@ class OutputVariable(object):
 
         dim_name = self.metadata['dimensions'][0]
 
+        if dim_name in ['nssr', 'ngw']:
+            dim_name = 'nhru'
+
         if dim_name == 'one':
             # Basin variable
             da = self.data.squeeze().to_xarray()
@@ -123,7 +126,7 @@ class OutputVariable(object):
 
         self.__data.index.name = 'time'
 
-        if self.metadata['dimensions'][0] in ['nhru', 'nsegment', 'nsub']:
+        if self.metadata['dimensions'][0] in ['nhru', 'nssr', 'ngw', 'nsegment', 'nsub']:
             self.__data.columns = self.__data.columns.astype(np.int32)
         elif self.metadata['dimensions'][0] == 'one':
             self.__data = self.__data.loc[:, self.__name].to_frame()
