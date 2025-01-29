@@ -47,11 +47,16 @@ class Parameters(object):
     # Author: Parker Norton (pnorton@usgs.gov)
     # Create date: 2017-05-01
 
-    def __init__(self, metadata: MetaDataType, verbose: Optional[bool] = False):
+    def __init__(self, metadata: MetaDataType,
+                 verbose: Optional[bool] = False):
         """Initialize the Parameters object.
 
         Create an ordered dictionary to contain pyPRMS.Parameter objects
+
+        :param metadata: Metadata for the parameters
+        :param verbose: Output debugging information
         """
+
         self.__dimensions = Dimensions(metadata=metadata, verbose=verbose)
         self.__parameters: Dict[str, Parameter] = dict()
 
@@ -84,7 +89,7 @@ class Parameters(object):
 
         return self.get(item)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Pretty-print string representation of the Parameters object.
 
         :return: Pretty-print string of Parameters
@@ -106,6 +111,7 @@ class Parameters(object):
 
         :returns: Control object
         """
+
         return self.__control
 
     @control.setter
@@ -114,6 +120,7 @@ class Parameters(object):
 
         :param ctl_obj: Control object
         """
+
         self.__control = ctl_obj
 
     @property
@@ -122,6 +129,7 @@ class Parameters(object):
 
         :returns: Dimensions object
         """
+
         return self.__dimensions
 
     @cached_property
@@ -135,7 +143,7 @@ class Parameters(object):
         hru_segment = self.get('hru_segment_nhm').data_raw
         nhm_id = self.get('nhm_id').data_raw
 
-        self.__hru_to_seg = dict(np.rec.fromarrays([nhm_id, hru_segment]).tolist())
+        self.__hru_to_seg = dict(np.rec.fromarrays([nhm_id, hru_segment]).tolist())   # type: ignore
         return self.__hru_to_seg
 
     @property
@@ -166,7 +174,7 @@ class Parameters(object):
 
         gage_ids = self.get('poi_gage_id').data_raw
         gage_segments = self.get('poi_gage_segment').data_raw
-        return dict(np.rec.fromarrays([gage_ids, gage_segments]).tolist())
+        return dict(np.rec.fromarrays([gage_ids, gage_segments]).tolist())   # type: ignore
 
     @property
     def poi_to_seg0(self) -> Dict[str, int]:
@@ -175,7 +183,7 @@ class Parameters(object):
         :returns: dictionary mapping poi_id to local, zero-based poi_seg"""
         gage_ids = self.get('poi_gage_id').data_raw   # .tolist()
         gage_segments = np.subtract(self.get('poi_gage_segment').data_raw, 1)
-        return dict(np.rec.fromarrays([gage_ids, gage_segments]).tolist())
+        return dict(np.rec.fromarrays([gage_ids, gage_segments]).tolist())   # type: ignore
 
     @cached_property
     def seg_to_hru(self) -> Dict[int, List[int]]:
@@ -194,7 +202,7 @@ class Parameters(object):
         for chru_idx, cseg in enumerate(hru_segment):   # type: ignore
             # keys are 1-based, values in arrays are 1-based
             # Non-routed HRUs have a seg key = zero
-            self.__seg_to_hru.setdefault(cseg, []).append(nhm_id[chru_idx].item())
+            self.__seg_to_hru.setdefault(cseg, []).append(nhm_id[chru_idx].item())   # type: ignore
         return self.__seg_to_hru
 
     @property
@@ -290,7 +298,8 @@ class Parameters(object):
 
         self.__parameters[name] = Parameter(name=name, meta=self.metadata, global_dims=self.__dimensions)
 
-    def add_metadata(self, name: str, metadata: Dict):
+    def add_metadata(self, name: str,
+                     metadata: Dict):
         """Add a new parameter entry to the parameter metadata. This is useful for adding ad-hoc parameters.
 
         :param name: Name of the parameter
@@ -389,12 +398,13 @@ class Parameters(object):
                 if pp.as_dataframe.values.reshape((-1, 11)).shape[0] != self.get('hru_deplcrv').unique().size:
                     con.print('  [yellow3]WARNING[/]: snarea_curve has more entries than needed by hru_deplcrv')
 
-    def exists(self, name) -> bool:
+    def exists(self, name: str) -> bool:
         """Checks if a parameter name exists.
 
-        :param str name: Name of the parameter
+        :param name: Name of the parameter
         :returns: True if parameter exists, otherwise False
         """
+
         return name in self.parameters.keys()
 
     def get(self, name: str) -> Parameter:
@@ -458,13 +468,15 @@ class Parameters(object):
             param_data.index.name = 'curve_index'
         return param_data
 
-    def get_subset(self, name: str, global_ids: List[int]) -> ParamDataRawType:
+    def get_subset(self, name: str,
+                   global_ids: List[int]) -> ParamDataRawType:
         """Returns a subset for a parameter based on the global_ids (e.g. nhm_id, nhm_seg).
 
         :param name: Name of the parameter
         :param global_ids: List of global IDs to extract
         :returns: Array of extracted values
         """
+
         param = self.get(name)
         dim_set = set(param.dimensions.keys()).intersection({'nhru', 'nssr', 'ngw', 'nsegment', 'ndeplval'})
         id_index_map: Union[Dict[Any, int], None] = {}
@@ -517,11 +529,13 @@ class Parameters(object):
                 return np.take(param.data_raw, nhm_idx0, axis=0)    # axis: 0 rows, 1 columns
                 # return param.data_raw[tuple(nhm_idx0), ]
 
-    def outlier_ids(self, name) -> List[int]:
+    def outlier_ids(self, name: str) -> List[int]:
         """Returns list of HRU or segment IDs of invalid parameter values
 
+        :param name: Name of the parameter
         :returns: List of HRU or segment IDs
         """
+
         cparam = self.get(name)
 
         param_data = self.get_dataframe(name)
@@ -865,7 +879,7 @@ class Parameters(object):
         for xx in poi:
             # We silently ignore missing POIs
             if xx in poi_ids:
-                poi_del_indices.append(poi_ids.index(xx))
+                poi_del_indices.append(poi_ids.index(xx))  # type: ignore
 
         # poi_ids = self.get('poi_gage_id').data
         # sorter = np.argsort(poi_ids)
@@ -905,7 +919,7 @@ class Parameters(object):
         elif isinstance(segs, KeysView):
             segs = list(segs)
         elif isinstance(segs, np.ndarray):
-            segs = segs.tolist()
+            segs = segs.tolist()  # type: ignore
 
         assert type(segs) is list
 
@@ -1267,7 +1281,8 @@ class Parameters(object):
         # Close the netcdf file
         nc_hdl.close()
 
-    def write_parameters_metadata_csv(self, filename: str, sep: str = '\t'):
+    def write_parameters_metadata_csv(self, filename: str,
+                                      sep: str = '\t'):
         """Writes the parameter metadata to a CSV file.
 
         :param filename: output filename
@@ -1441,7 +1456,8 @@ class Parameters(object):
 
         return param_set
 
-    def _upstream_hrus(self, streamnet: nx.DiGraph, dsmost_seg: List[int]) -> List[int]:
+    def _upstream_hrus(self, streamnet: nx.DiGraph,
+                       dsmost_seg: List[int]) -> List[int]:
         """Get list of HRUs that contribute to the given stream segments.
 
         :param streamnet: Directed, Acyclic Graph (DAG) of stream network
@@ -1470,7 +1486,8 @@ class Parameters(object):
         final_hru_list.sort()
         return final_hru_list
 
-    def _upstream_segments(self, streamnet: nx.DiGraph, dsmost_seg: List[int]) -> List[int]:
+    def _upstream_segments(self, streamnet: nx.DiGraph,
+                           dsmost_seg: List[int]) -> List[int]:
         """Get list of segments that contribute to the given stream segments.
 
         :param streamnet: Directed, Acyclic Graph (DAG) of stream network
