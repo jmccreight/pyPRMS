@@ -10,6 +10,7 @@ from .dimensions.Dimension import Dimension
 from .dimensions.Dimensions import Dimensions, ParamDimensions
 from .metadata.metadata import MetaData
 from .summary.OutputVariables import OutputVariables
+from .summary.OutputVariable import OutputVariable
 from .parameters.Parameter import Parameter
 from .parameters.Parameters import Parameters
 from .parameters.ParameterFile import ParameterFile
