@@ -4,7 +4,7 @@ import pandas as pd   # type: ignore
 from rich.console import Console
 from rich import pretty
 
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Union
 pretty.install()
 con = Console()
 
@@ -26,6 +26,13 @@ class DataFile(object):
                  missing: Sequence[str] = ('-99.9', '-999.0', '-9999.0'),
                  verbose: bool = False,
                  include_metadata: bool = True):
+        """Create the DataFile object.
+
+        :param filename: name of data file
+        :param missing: list of missing values
+        :param verbose: output debugging information
+        :param include_metadata: whether to include metadata
+        """
 
         self.__missing = missing
         self.filename = filename
@@ -46,37 +53,56 @@ class DataFile(object):
         self.load_file(self.filename)
 
     @property
-    def data(self):
-        """Pandas dataframe of the station data for each input variable"""
+    def data(self) -> pd.DataFrame:
+        """Pandas dataframe of the data file for each input variable
+
+        :returns: Pandas dataframe of the data file
+        """
 
         return self.__data_raw
 
     @property
-    def input_variables(self):
-        """Get the input variables in the data file"""
+    def input_variables(self) -> Dict[str, Dict[str, Union[int, str, List[str], pd.DataFrame]]]:
+        """Get the input variables in the data file.
+
+        :returns: Dictionary of input variables that are available in the data file
+        """
 
         return self.__input_vars_intern
 
     def data_by_variable(self, variable: str) -> pd.DataFrame:
-        """Get the data for a specific input variable"""
+        """Get the data for a specific input variable
+
+        :param variable: name of input variable
+        :returns: Pandas dataframe of the data for the input variable
+        """
+
         import warnings
 
         msg = "DataFile.data_by_variable() method to be deprecated"
         warnings.warn(msg, DeprecationWarning)
         data = self.__input_vars[variable].data.copy()
-        # The names are a headache anyother way, hard to make them truly
+
+        # The names are a headache any other way, hard to make them truly
         # backwards compatible using the old code.
         data.columns = variable + "_" + data.columns
         assert type(data) is pd.DataFrame
         return data
 
     def get(self, name: str) -> InputVariable:
-        """Get the metadata for a specific input variable"""
+        """Get the metadata for a specific input variable.
+
+        :param name: name of input variable
+        :returns: InputVariable object
+        """
 
         return self.__input_vars[name]
 
     def load_file(self, filename: Union[str, os.PathLike]):
-        """Read the PRMS ASCII streamflow data file"""
+        """Read the PRMS ASCII streamflow data file.
+
+        :param filename: name of data file
+        """
 
         header_info = []
 
@@ -130,8 +156,10 @@ class DataFile(object):
             # Add data to each input variable
             self._add_variable_data()
 
-    def _add_metadata(self, header_info):
-        """Add metadata from data file
+    def _add_metadata(self, header_info: List[str]):
+        """Add metadata from data file.
+
+        :param header_info: list of header lines from the data file
         """
 
         it = iter(header_info)
@@ -150,13 +178,15 @@ class DataFile(object):
                         for cvar in station_vars:
                             if cvar not in self.__input_vars_intern:
                                 raise KeyError(f'{cvar} is not one of the input variables declared in the data file')
-                            self.__input_vars_intern[cvar].setdefault('stations', []).extend(line.replace(COMMENT, '').
-                                                                                             replace(' ', '').split(','))
+                            self.__input_vars_intern[cvar].setdefault('stations', []).extend(line.
+                                                                                             replace(COMMENT, '').
+                                                                                             replace(' ', '').
+                                                                                             split(','))
                         line = next(it)
                 elif line[0:len(UNITS_START)] == UNITS_START:
                     # Process the units
                     while line[0:len(HEADER_SEP)] != HEADER_SEP:
-                        for elem in line.replace(UNITS_START, '').replace(COMMENT, '').replace(' ', '').split(','):
+                        for elem in (line.replace(UNITS_START, '').replace(COMMENT, '').replace(' ', '').split(',')):
                             cvar, cunits = elem.split('=')
                             try:
                                 self.__input_vars_intern[cvar]['units'] = cunits
@@ -166,7 +196,7 @@ class DataFile(object):
                         line = next(it)
 
     def _add_variable_data(self):
-        """Add data to each input variable
+        """Add data to each input variable.
         """
 
         # Create a data key for each input variable that maps to their respective parts of the dataframe
@@ -178,9 +208,12 @@ class DataFile(object):
             # self.__input_vars_intern[cvar]['data'] = self.__data_raw.iloc[:, st_idx:(st_idx + cmeta['size'])]
             st_idx += cmeta['size']
 
-    def _data_column_names(self):
-        """Create column names for the dataframe
+    def _data_column_names(self) -> List[str]:
+        """Create column names for the dataframe.
+
+        :returns: list of column names
         """
+
         var_col_names = []
 
         for cvar, meta in self.__input_vars_intern.items():
