@@ -42,7 +42,7 @@ def main():
     # Try to write the file out
     if args.fmt == 'netcdf':
         print('Writing parameters to netcdf format')
-        pdb.write_netcdf(args.dst)
+        pdb.write_parameter_netcdf(args.dst)
     elif args.fmt == 'paramdb':
         print('Writing parameters to paramdb format')
         pdb.write_paramdb(args.dst)
