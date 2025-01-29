@@ -3,17 +3,17 @@
 import io
 import numpy as np
 import operator
-import pandas as pd
+import pandas as pd   # type: ignore
 import pkgutil
 import re
 import xml.etree.ElementTree as xmlET
 
 from typing import Dict, List, Optional, Sequence, Union   # OrderedDict as OrderedDictType,
 
-from ..prms_helpers import version_info
+# from ..prms_helpers import version_info
 from .ControlVariable import ControlVariable
 from ..Exceptions_custom import ControlError
-from ..constants import (ctl_order, ctl_variable_modules, ctl_implicit_modules, internal_module_map,
+from ..constants import (ctl_order, ctl_implicit_modules, internal_module_map,
                          MetaDataType, VAR_DELIM, PTYPE_TO_PRMS_TYPE)
 
 cond_check = {'=': operator.eq,
@@ -316,7 +316,7 @@ class Control(object):
         col_names = ['variable_name', 'datatype', 'description', 'default']
 
         df = pd.DataFrame.from_records(out_list, columns=col_names)
-        if sep == ',':
+        if sep == ',':   # pragma: no cover
             df.to_csv(filename, sep=sep, quotechar='"', index=False)
         else:
             df.to_csv(filename, sep=sep, index=False)
