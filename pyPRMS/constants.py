@@ -55,11 +55,11 @@ ctl_order: List[str] = ['start_time', 'end_time', 'initial_deltat', 'executable_
                         'dispGraphsBuffSize', 'ndispGraphs', 'dispVar_element', 'dispVar_names', 'dispVar_plot',
                         'mapOutON_OFF', 'nmapOutVars', 'mapOutVar_names']
 
-ctl_variable_modules: List[str] = ['et_module', 'precip_module', 'soilzone_module', 'solrad_module',
-                                   'srunoff_module', 'strmflow_module', 'temp_module', 'transp_module']
+# ctl_variable_modules: List[str] = ['et_module', 'precip_module', 'soilzone_module', 'solrad_module',
+#                                    'srunoff_module', 'strmflow_module', 'temp_module', 'transp_module']
 
-ctl_summary_modules: List[str] = ['basin_sum', 'basin_summary', 'map_results',
-                                  'nhru_summary', 'nsegment_summary', 'nsub_summary', 'subbasin']
+# ctl_summary_modules: List[str] = ['basin_sum', 'basin_summary', 'map_results',
+#                                   'nhru_summary', 'nsegment_summary', 'nsub_summary', 'subbasin']
 
 ctl_implicit_modules: Dict[str, str] = {'basin_module': 'basin',
                                         'intcp_module': 'intcp',
@@ -85,30 +85,37 @@ DIMENSIONS_HDR: str = 'Dimensions'
 PARAMETERS_HDR: str = 'Parameters'
 CATEGORY_DELIM: str = '**'  # Delimiter for categories of variables
 VAR_DELIM: str = '####'  # Used to delimit dimensions and parameters
-DATA_TYPES: Dict[int, str] = {1: 'integer', 2: 'float', 3: 'double', 4: 'string'}
+# DATA_TYPES: Dict[int, str] = {1: 'integer', 2: 'float', 3: 'double', 4: 'string'}
 
 # Valid dimensions names for PRMS
-DIMENSION_NAMES: List[str] = ['mxnsos', 'ncascade', 'ncascdgw', 'nconsumed', 'ndays', 'ndepl',
-                              'ndeplval', 'ngate', 'ngate2', 'ngate3', 'ngate4',
-                              'nevap', 'nexternal', 'ngw', 'ngwcell', 'nhru', 'nhrucell', 'nhumid',
-                              'nlake', 'nlakeelev', 'nlapse', 'nmonths', 'nobs', 'npoigages', 'nrain',
-                              'nratetbl', 'nsegment', 'nsnow', 'nsol', 'nssr', 'nsub', 'ntemp',
-                              'numlakes', 'nwateruse', 'nwind', 'one',
-                              'nstage', 'nstage2', 'nstage3', 'nstage4']
+# DIMENSION_NAMES: List[str] = ['mxnsos', 'ncascade', 'ncascdgw', 'nconsumed', 'ndays', 'ndepl',
+#                               'ndeplval', 'ngate', 'ngate2', 'ngate3', 'ngate4',
+#                               'nevap', 'nexternal', 'ngw', 'ngwcell', 'nhru', 'nhrucell', 'nhumid',
+#                               'nlake', 'nlakeelev', 'nlapse', 'nmonths', 'nobs', 'npoigages', 'nrain',
+#                               'nratetbl', 'nsegment', 'nsnow', 'nsol', 'nssr', 'nsub', 'ntemp',
+#                               'numlakes', 'nwateruse', 'nwind', 'one',
+#                               'nstage', 'nstage2', 'nstage3', 'nstage4']
 
 # These dimensions are related and should have same size
-HRU_DIMS: List[str] = ['nhru', 'ngw', 'nssr']
+# HRU_DIMS: List[str] = ['nhru', 'ngw', 'nssr']
 
 # Constants for NhmParamDb
 REGIONS: List[str] = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09',
                       'r10L', 'r10U', 'r11', 'r12', 'r13', 'r14', 'r15', 'r16', 'r17', 'r18']
 PARAMETERS_XML: str = 'parameters.xml'
 DIMENSIONS_XML: str = 'dimensions.xml'
+
+# 2025-01-24 PAN - used by Parameters.write_parameter_netcdf()
 NETCDF_DATATYPES: Dict[int, str] = {1: 'i4', 2: 'f4', 3: 'f8', 4: 'S1'}
+
+# 2025-01-24 PAN - used by Parameters.xml_global_parameters()
 NHM_DATATYPES: Dict[str, int] = {'I': 1, 'F': 2, 'D': 3, 'S': 4}
-# PARNAME_DATATYPES = {'long': 1, 'float': 2, 'double': 3, 'string': 4}
-# DATATYPE_TO_DTYPE = {1: int, 2: np.float32, 3: np.float64, 4: np.str_}
+
+# 2025-01-24 PAN - used by ControlFile._read() and ParameterFile._read()
 PTYPE_TO_DTYPE = {1: np.int32, 2: np.float32, 3: np.float64, 4: np.str_}
 
 NEW_PTYPE_TO_DTYPE = {'int32': np.int32, 'float32': np.float32, 'float64': np.float64, 'string': np.str_, 'datetime': np.datetime64}
 PTYPE_TO_PRMS_TYPE: Dict[str, int] = {'int32': 1, 'float32': 2, 'float64': 3, 'string': 4, 'datetime': 1}
+
+# PARNAME_DATATYPES = {'long': 1, 'float': 2, 'double': 3, 'string': 4}
+# DATATYPE_TO_DTYPE = {1: int, 2: np.float32, 3: np.float64, 4: np.str_}
