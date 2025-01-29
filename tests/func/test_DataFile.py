@@ -16,6 +16,7 @@ class TestStreamflow:
 
         expected_stations = ['06469400']
 
+        assert obs_sf.name == 'runoff'
         assert obs_sf.data.mean().values[0] == 30.094350205198356
         assert len(obs_sf.data.columns) == 1
         assert len(obs_sf.data) == 731
