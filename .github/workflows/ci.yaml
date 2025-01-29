@@ -98,7 +98,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ "ubuntu-latest", "macos-latest", "windows-latest" ]
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.10", "3.11"]
 
     steps:
 
@@ -114,10 +114,18 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: Python version check
+        run: |
+          python --version
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{matrix.python-version}}
+
+      - name: Python version check
+        run: |
+          python --version
 
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -130,7 +138,7 @@ jobs:
         run: |
           pip -V
           pip list
-          python --version  
+          python --version
 
       - name: Test suite
         working-directory: tests
