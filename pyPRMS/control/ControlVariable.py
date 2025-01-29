@@ -5,7 +5,7 @@ import numpy as np
 import re
 from typing import Callable, Dict, List, Optional, Sequence, Union
 
-from ..constants import DATA_TYPES, NEW_PTYPE_TO_DTYPE
+from ..constants import NEW_PTYPE_TO_DTYPE
 from pyPRMS.prms_helpers import cond_check, set_date
 from ..Exceptions_custom import ControlError
 
@@ -55,24 +55,6 @@ class ControlVariable(object):
             outstr += f'{kk}: {vv}\n'
 
         return outstr
-
-        # outstr = f'name: {self.name}\n'
-        # if self.meta is not None:
-        #     outstr += f'datatype: {self.meta.get("datatype")}\n'
-        #     # outstr += f'datatype: {self.datatype} ({DATA_TYPES[self.datatype]})\n'
-        #
-        #     outstr += f'description: {self.meta["description"]}\n'
-        #     outstr += f'default: {self.meta["default"]}\n'
-        #
-        #     if 'valid_value_type' in self.meta:
-        #         outstr += f'valid values represent: {self.meta["valid_value_type"]}\n'
-        #
-        #     if 'valid_values' in self.meta:
-        #         outstr += f'valid_values: \n'
-        #         for kk, vv in self.meta['valid_values'].items():
-        #             outstr += f'   {kk}: {vv}\n'
-        #
-        # return outstr
 
     @property
     def dyn_param_meaning(self):
