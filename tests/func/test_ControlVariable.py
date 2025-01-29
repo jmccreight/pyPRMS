@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from pyPRMS import ControlVariable
 from pyPRMS import MetaData
-from pyPRMS.constants import DATA_TYPES, NEW_PTYPE_TO_DTYPE
+from pyPRMS.constants import NEW_PTYPE_TO_DTYPE
 
 # from pyPRMS.constants import NEW_PTYPE_TO_DTYPE   # PTYPE_TO_DTYPE
 
