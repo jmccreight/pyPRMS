@@ -4,7 +4,7 @@ import numpy as np
 
 from pathlib import Path
 from typing import Optional, Union
-from ..constants import DATA_TYPES, PTYPE_TO_DTYPE, VAR_DELIM
+from ..constants import PTYPE_TO_DTYPE, VAR_DELIM
 from ..prms_helpers import get_file_iter
 from .Control import Control
 from ..Exceptions_custom import ControlError
@@ -25,6 +25,9 @@ class ControlFile(Control):
 
         self.__verbose = verbose
         self.__isloaded = False
+
+        if isinstance(filename, str):
+            filename = Path(filename)
         self.filename = filename
 
     @property
