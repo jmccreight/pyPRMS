@@ -102,17 +102,17 @@ jobs:
 
     steps:
 
-      - name: Free Disk Space (Ubuntu)
-        if: runner.os == 'Linux'
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
+      # - name: Free Disk Space (Ubuntu)
+      #   if: runner.os == 'Linux'
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: false
+      #     android: true
+      #     dotnet: true
+      #     haskell: true
+      #     large-packages: true
+      #     docker-images: true
+      #     swap-storage: true
 
       - name: Python version check
         run: |
